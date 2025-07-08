@@ -19,7 +19,7 @@ st.set_page_config(
 # -------------------- FUNGSI UTILITAS -------------------- #
 @st.cache_data
 def load_data():
-    url = "https://raw.githubusercontent.com/Brama17/Hyper-Tunning-Analysis/main/churn.csv"
+    url = "https://raw.githubusercontent.com/Harwian-Brama-DS/Hyper-Tunning-Analysis/main/churn.csv"
     try:
         df = pd.read_csv(url)
     except Exception as e:
@@ -38,15 +38,23 @@ def split_data(df, features):
     y = df['Churn']
     return train_test_split(X, y, test_size=0.2, random_state=42)
 
+def evaluasi_model(model, X_test, y_test):
+    y_pred = model.predict(X_test)
+    acc = accuracy_score(y_test, y_pred)
+    class_report = classification_report(y_test, y_pred)
+    cm = confusion_matrix(y_test, y_pred)
+    return acc, class_report, cm, y_pred
+
 # -------------------- TAMPILKAN SIDEBAR -------------------- #
 def sidebar_navigation():
-    st.sidebar.title("📂 Navigasi / Navigation")
-    language = st.sidebar.selectbox("Select Language / Pilih Bahasa", ["id", "en"])
-    st.session_state.language = language
-    if language == "id":
-        return st.sidebar.radio("Pilih Halaman / Select Page", ["Tentang Saya", "Proyek", "Machine Learning", "Insight & Rekomendasi", "Kontak"])
-    else:
-        return st.sidebar.radio("Pilih Halaman / Select Page", ["About Me", "Project", "Machine Learning", "Insight & Recommendation", "Contact"])
+    with st.sidebar:
+        st.title("📂 Navigasi / Navigation")
+        language = st.selectbox("🌐 Pilih Bahasa / Choose Language", ["id", "en"])
+        st.session_state.language = language
+        if language == "id":
+            return st.radio("Pilih Halaman", ["Tentang Saya", "Proyek", "Machine Learning", "Insight & Rekomendasi", "Kontak"])
+        else:
+            return st.radio("Select Page", ["About Me", "Project", "Machine Learning", "Insight & Recommendation", "Contact"])
 
 # -------------------- TENTANG SAYA -------------------- #
 def tentang_saya():
@@ -75,26 +83,22 @@ def proyek(df):
     st.title("📈 Proyek / Project")
     st.markdown("#### Telco Customer Churn Analysis")
 
-    # Filter interaktif
     st.sidebar.markdown("## 🔍 Filter Data")
     min_tenure, max_tenure = st.sidebar.slider("Rentang Tenure", 0, int(df['Tenure'].max()), (0, 72))
     df_filtered = df[(df['Tenure'] >= min_tenure) & (df['Tenure'] <= max_tenure)]
 
-    # Distribusi Tenure
     st.subheader("Distribusi Tenure")
     fig1, ax1 = plt.subplots()
     sns.histplot(df_filtered['Tenure'], bins=30, kde=True, color='skyblue', ax=ax1)
     ax1.set_xlabel("Tenure (bulan)")
     st.pyplot(fig1)
 
-    # Churn Count
     st.subheader("Proporsi Churn")
     fig2, ax2 = plt.subplots()
     sns.countplot(data=df_filtered, x='Churn', palette='Set2', ax=ax2)
     ax2.set_xticklabels(['Tidak Churn', 'Churn'])
     st.pyplot(fig2)
 
-    # Monthly Charges vs Churn
     st.subheader("Monthly Charges vs Churn")
     fig3, ax3 = plt.subplots()
     sns.boxplot(x='Churn', y='MonthlyCharges', data=df_filtered, ax=ax3, palette='Set1')
@@ -113,25 +117,24 @@ def machine_learning(df):
     if model_choice == "Random Forest":
         model = RandomForestClassifier(n_estimators=100, random_state=42)
         alasan = "Random Forest dipilih karena mampu menangani data tidak linear dan memiliki performa baik dengan default parameter."
+        deskripsi = "- Cocok untuk data non-linear\n- Tahan terhadap overfitting\n- Bisa menangani missing value & outlier"
     else:
         model = LogisticRegression(max_iter=1000)
         alasan = "Logistic Regression dipilih karena interpretabilitasnya tinggi dan cocok untuk binary classification."
+        deskripsi = "- Sederhana dan interpretatif\n- Cocok jika hubungan linier\n- Cepat dan ringan"
 
     model.fit(X_train, y_train)
-    y_pred = model.predict(X_test)
+    acc, report, cm, y_pred = evaluasi_model(model, X_test, y_test)
 
-    # Evaluasi Model
     st.subheader("Evaluasi Model")
-    st.write(f"**Akurasi:** {accuracy_score(y_test, y_pred):.2f}")
-    st.code(classification_report(y_test, y_pred))
+    st.markdown(f"### 🔎 Akurasi: `{acc:.2f}`")
+    st.code(report)
 
-    # Confusion Matrix
     st.subheader("Confusion Matrix")
     fig4, ax4 = plt.subplots()
-    sns.heatmap(confusion_matrix(y_test, y_pred), annot=True, fmt='d', cmap='Blues', ax=ax4)
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', ax=ax4)
     st.pyplot(fig4)
 
-    # Feature Importance
     if model_choice == "Random Forest":
         st.subheader("Feature Importance")
         importance = pd.Series(model.feature_importances_, index=features)
@@ -139,7 +142,6 @@ def machine_learning(df):
         importance.sort_values().plot(kind='barh', color='orange', ax=ax5)
         st.pyplot(fig5)
 
-    # ROC Curve dan AUC
     st.subheader("ROC Curve dan AUC")
     if hasattr(model, "predict_proba"):
         y_proba = model.predict_proba(X_test)[:, 1]
@@ -154,13 +156,10 @@ def machine_learning(df):
         ax6.set_title("ROC Curve")
         ax6.legend()
         st.pyplot(fig6)
-    else:
-        st.warning("Model ini tidak mendukung ROC Curve (predict_proba tidak tersedia).")
 
-    # Penjelasan Model
-    st.subheader("📌 Alasan Memilih Model")
+    st.subheader("📌 Alasan & Penjelasan Model")
     st.markdown(alasan)
-    st.markdown("Model terbaik dipilih berdasarkan kombinasi akurasi dan nilai AUC. Silakan bandingkan hasil evaluasi untuk masing-masing model.")
+    st.info(deskripsi)
 
 # -------------------- INSIGHT & REKOMENDASI -------------------- #
 def insight_rekomendasi():
@@ -187,12 +186,13 @@ def kontak():
     - 📧 **Email**: [harwianbrama02@gmail.com](mailto:harwianbrama02@gmail.com)
     - 💼 **LinkedIn**: [Harwian Brama Enggar P](https://www.linkedin.com)
     - 📱 **WhatsApp**: [082141922446](https://wa.me/6282141922446)
+    - 💻 **GitHub**: [GitHub Profil](https://github.com/Harwian-Brama-DS)
     """)
 
 # -------------------- MAIN APP -------------------- #
 df = load_data()
 
-if df is not None:
+if df is not None and not df.empty:
     page = sidebar_navigation()
     if "Tentang" in page or "About" in page:
         tentang_saya()
