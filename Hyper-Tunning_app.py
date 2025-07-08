@@ -187,7 +187,6 @@ def kontak():
     - 📧 **Email**: [harwianbrama02@gmail.com](mailto:harwianbrama02@gmail.com)
     - 💼 **LinkedIn**: [Harwian Brama Enggar P](https://www.linkedin.com)
     - 📱 **WhatsApp**: [082141922446](https://wa.me/6282141922446)
-    - 💻 **GitHub**: [GitHub Profil](https://github.com/Harwian-Brama-DS)
     """)
 
 # -------------------- MAIN APP -------------------- #
